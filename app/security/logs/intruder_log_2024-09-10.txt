@@ -1,0 +1,9 @@
+Timestamp: 2024-09-10 16:17:00
+IP Address: 127.0.0.1
+MAC Address: N/A
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Avast/127.0.0.0
+Location: {"ip": "127.0.0.1", "bogon": true}
+Username Attempted: superadmin@admin.com
+
+================================================================================
+
