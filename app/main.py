@@ -47,15 +47,20 @@ def initial_data_insert():
     finally:
         db.close()
 
+# List of allowed origins
+origins = [
+    "http://localhost:4200",
+    "https://performance-appraisal.netlify.app"
+]
 
     
-
 
 def start_application():
     app = FastAPI(docs_url="/", title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
     app.add_middleware(
     CORSMiddleware,
-    allow_origins= settings.SET_NEW_ORIGIN,
+    # allow_origins= settings.SET_NEW_ORIGIN,
+    allow_orgins = origins,
     allow_credentials=True,    
     allow_methods=["*"],
     allow_headers=["*"]

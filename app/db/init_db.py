@@ -3,19 +3,14 @@ from domains.auth.models.users import User
 from utils.security import pwd_context
 from sqlalchemy.orm import Session 
 from uuid import uuid4
-from dotenv import load_dotenv 
-import os
 
-## lets load env vars from .env file
-load_dotenv(dotenv_path='.env')
 
-# Retrieve sensitive and configurable information from environment variables
-SUPER_ADMIN_NAME: str = os.getenv("SUPER_ADMIN_NAME")
-SUPER_ADMIN_PHONE_NUMBER: str = os.getenv("SUPER_ADMIN_PHONE_NUMBER")
-SUPER_ADMIN_EMAIL: str = os.getenv("SUPER_ADMIN_EMAIL")
-SUPER_ADMIN_PASSWORD: str = os.getenv("SUPER_ADMIN_PASSWORD")
-SUPER_ADMIN_ROLE: str = os.getenv("SUPER_ADMIN_ROLE")
-SUPER_ADMIN_STATUS: bool = os.getenv("SUPER_ADMIN_STATUS").lower() == "true"
+SUPER_ADMIN_NAME: str = "Super Administrator"
+SUPER_ADMIN_PHONE_NUMBER: str = "9876543210"
+SUPER_ADMIN_EMAIL: str = "superadmin@admin.com"
+SUPER_ADMIN_PASSWORD: str = "openforme"
+SUPER_ADMIN_ROLE: str = "Super Admin"
+SUPER_ADMIN_STATUS: bool = True
 
 
 def init_db(db: Session):
