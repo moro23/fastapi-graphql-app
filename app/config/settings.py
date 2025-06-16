@@ -42,8 +42,8 @@ class Settings:
     AUDIO_PATH: str = os.getenv("AUDIO_PATH")
     VIDEO_PATH: str = os.getenv("VIDEO_PATH")
     SHOW_DOCS: str = os.getenv("SHOW_DOCS")
-    ALLOW_ORIGINS: str = os.getenv("ALLOW_ORIGINS", set_allow_origin)
-    SET_NEW_ORIGIN : list = ALLOW_ORIGINS.split(',')
+    # ALLOW_ORIGINS: str = os.getenv("ALLOW_ORIGINS", set_allow_origin)
+    # SET_NEW_ORIGIN : list = ALLOW_ORIGINS.split(',')
     SYSTEM_LOGO: str = os.getenv("SYSTEM_LOGO")
 
 
