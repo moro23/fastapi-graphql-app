@@ -29,3 +29,5 @@ pg8000==1.29.8
 python-Levenshtein
 fastapi_limiter
 slowapi
+strawberry-graphql[fastapi]
+
