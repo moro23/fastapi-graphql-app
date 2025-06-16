@@ -16,3 +16,6 @@ venv/
 
 # Ignore Docker-related files
 *.pid
+
+##
+service_account.json
