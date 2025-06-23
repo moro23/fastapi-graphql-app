@@ -1,6 +1,6 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.exceptions import RequestValidationError
-from fastapi import FastAPI,Request,status, Depends
+from fastapi import FastAPI,Request,status, Depends, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
 from db.init_db import init_db,create_super_admin
 from apis.google_cloud_storage_api import create_service_account_json
@@ -9,14 +9,17 @@ from domains.auth.models.users import User
 from fastapi.responses import JSONResponse
 from db.init_models import create_tables
 from config.settings import settings
-from db.session import SessionLocal
+from db.session import SessionLocal, get_db
 from sqlalchemy.orm import Session
-from db.session import get_db
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 import uvicorn
 import json
 import os
+
+from strawberry.fastapi import GraphQLRouter
+from graphql_app.schema import schema as graphql_schema 
+from utils.rbac import get_current_user as fastapi_get_current_user
 
 
 ## 
@@ -36,6 +39,38 @@ def setup_google_cloud_credentials():
 def include(app):
     app.include_router(api_router)
 
+async def get_graphql_context(request: Request, 
+                                  response: FastAPIResponse,
+                                  db: Session = Depends(get_db)):
+        user_from_dependency: Optional[User] = None 
+
+        try:
+            token = request.cookies.get("AccessToken") or request.headers.get("Authorization")
+            if token:
+                if isinstance(token, str) and token.startswith("Bearer "):
+                    token = token.split("Bearer ")[1]
+                    try:
+                        user_from_dependency = fastapi_get_current_user(request, token, db)
+                    except HTTPException as e:
+                        user_from_dependency = None 
+        except Exception as e:
+            print(f"Error getting user from dependency: {e}")
+            user_from_dependency = None
+
+        return {
+            "request": request,
+            "response": response,
+            "db": db,
+            "current_user": user_from_dependency
+        }
+
+graphql_app_router = GraphQLRouter(
+    schema=graphql_schema,
+    context_getter= get_graphql_context,
+    graphiql= settings.SHOW_DOCS == "True"  # Enable GraphiQL interface
+  
+)
+
 
 
 def initial_data_insert():
@@ -50,7 +85,9 @@ def initial_data_insert():
 # List of allowed origins
 origins = [
     "http://localhost:4200",
-    "https://performance-appraisal.netlify.app"
+    "http://localhost:8080",
+    "https://studio.apollographql.com",
+    
 ]
 
     
