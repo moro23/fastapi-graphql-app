@@ -1,4 +1,4 @@
-from sqlachemy.orm import Session 
+from sqlalchemy.orm import Session
 from .models import AuditLog 
 from datetime import datetime, timezone 
 from fastapi import Request as FastAPIRequest 
@@ -17,7 +17,7 @@ def create_audit_log_entry(
         user_id=user_id,
         action=action, 
         entity_type=entity_type,
-        entity_id=str(entity_id) if entity_id else None 
+        entity_id=str(entity_id) if entity_id else None,
         details=details, 
         ip_address = ip_address,
         user_agent=user_agent 
