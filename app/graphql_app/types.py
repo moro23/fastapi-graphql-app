@@ -2,7 +2,7 @@ import strawberry
 from typing import List, Optional, TYPE_CHECKING, NewType 
 from datetime import datetime 
 from pydantic import UUID4 
-from domains.auth.models import User as UserModel 
+from domains.auth.models.users import User as UserModel 
 from domains.auth.models.roles import Role as RoleModel 
 from domains.faq.models import FAQCategory as FAQCategoryModel,  FAQItem as FAQItemModel
 from domains.feedback.models import Feedback as FeedbackModel 
@@ -15,7 +15,7 @@ from fastapi import Depends
 ## Custom Strawberry ID type for UUIDs if needed, or map to str/strawberry.ID
 StrawberryUUID = strawberry.scalar(
     NewType("StrawberryUUID", UUID4),
-    serializer=lambda v: str(v) 
+    serialize=lambda v: str(v),
     parse_value=lambda v: UUID4(v)
 )
 
@@ -31,7 +31,7 @@ class UserType:
     is_active: bool
 
     @strawberry.field
-    async def role(self, info: strawberry.info) -> Optional["RoleType"]: 
+    async def role(self, info: strawberry.Info) -> Optional["RoleType"]: 
         db: Session = info.context["db"]
         user_model = db.query(UserModel).options(selectinload(UserModel.role)).filter(UserModel.id == self.id).first()
         if user_model and user_model.role:
