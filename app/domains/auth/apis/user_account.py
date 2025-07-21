@@ -52,8 +52,7 @@ def list_users(
 )
 async def create_user(
     users_forms_in: schemas.UserCreate,
-        db: Session = Depends(get_db),
-        current_user=Annotated[User, Depends(check_user_role(["Super Admin"]))]
+        db: Session = Depends(get_db)
 ) -> Any:
     # Await the async create_user function
     user = await actions.create_user(db=db, users_form=users_forms_in)
@@ -68,8 +67,7 @@ async def create_user(
 def update_users(
         *, db: Session = Depends(get_db),
         id: UUID4,
-        users_forms_in: schemas.UserUpdate,
-        current_user=Annotated[User, Depends(check_user_role(["Super Admin"]))]
+        users_forms_in: schemas.UserUpdate
 ) -> Any:
     users_router = actions.get_user_by_id(db=db, id=id)
     if not users_router:
@@ -88,8 +86,7 @@ def update_users(
 )
 def get_users(
         *, db: Session = Depends(get_db),
-        id: UUID4,
-        current_user=Annotated[User, Depends(check_user_role(["Super Admin"]))]
+        id: UUID4
 ) -> Any:
     users_router = actions.get_user_by_id(db=db, id=id)
     if not users_router:
@@ -114,8 +111,7 @@ def get_users(
 )
 def delete_users(
         *, db: Session = Depends(get_db),
-        id: UUID4,
-        current_user=Annotated[User, Depends(check_user_role(["Super Admin"]))]
+        id: UUID4
 ) -> Any:
     users_forms_router = actions.get_user_by_id(db=db, id=id)
     if not users_forms_router:
