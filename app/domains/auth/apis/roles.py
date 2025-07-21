@@ -45,7 +45,7 @@ role_router = APIRouter(
 
 ## endpoint to 
 @role_router.get("/", response_model=List[RoleRead], dependencies=[Depends(check_user_role(['Super Admin']))])
-def get_all_roles(*, db: Session = Depends(get_db), skip: int=0, limit: int=0, current_user=Annotated[User, Depends(check_user_role(["Super Admin"]))]):
+def get_all_roles(*, db: Session = Depends(get_db), skip: int=0, limit: int=0):
     all_roles = actions.get_all_roles(db=db)
     return all_roles 
 
