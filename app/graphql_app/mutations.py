@@ -1,5 +1,5 @@
 import strawberry
-from typing import Optional
+from typing import Optional, Any
 from sqlalchemy.orm import Session
 from fastapi import Depends, Request as FastAPIRequest
 from .types import FAQCategoryType, FAQItemType, FeedbackType, StrawberryUUID
@@ -13,6 +13,8 @@ from db.session import get_db # FastAPI dependency
 # from utils.rbac import get_current_user # FastAPI dependency, or use info.context
 from uuid import UUID
 from datetime import datetime, timezone
+
+from .permissions import IsAuthenticated, HasRole
 
 
 # Helper for audit logging in mutations
@@ -33,8 +35,8 @@ def _log_action(info: strawberry.Info, action: str, entity_type: Optional[str] =
 
 @strawberry.type 
 class Mutation:
-    @strawberry.mutation(permissions_classes=[IsAuthenticated, HasRole(role_name="admin")])
-    async def create_faq_category(self, info: strawberry.types.Info, input: FAQCategoryInput) -> FAQCategoryType:
+    @strawberry.mutation(permission_classes=[IsAuthenticated, HasRole(roles=["Super Admin", "Editor"])])
+    async def create_faq_category(self, info: strawberry.Info, input: FAQCategoryInput) -> FAQCategoryType:
         """Create a new FAQ category."""
         db: Session = info.context["db"]
         category = FAQCategoryModel(**input.dict())
@@ -47,8 +49,8 @@ class Mutation:
         
         return FAQCategoryType.from_orm(category)
 
-    @strawberry.mutation(permissions_classes=[IsAuthenticated, HasRole(role_name="admin")])
-    async def update_faq_category(self, info: strawberry.types.Info, id: StrawberryUUID, input: FAQCategoryInput) -> FAQCategoryType:
+    @strawberry.mutation(permission_classes=[IsAuthenticated, HasRole(roles=["Super Admin", "Editor"])])
+    async def update_faq_category(self, info: strawberry.Info, id: StrawberryUUID, input: FAQCategoryInput) -> FAQCategoryType:
         """Update an existing FAQ category."""
         db: Session = info.context["db"]
         category = db.query(FAQCategoryModel).filter(FAQCategoryModel.id == id).first()
@@ -66,8 +68,8 @@ class Mutation:
         
         return FAQCategoryType.from_orm(category)
 
-    @strawberry.mutation(permissions_classes=[IsAuthenticated, HasRole(role_name="admin")])
-    async def delete_faq_category(self, info: strawberry.types.Info, id: StrawberryUUID) -> bool:
+    @strawberry.mutation(permission_classes=[IsAuthenticated, HasRole(roles=["Super Admin", "Editor"])])
+    async def delete_faq_category(self, info: strawberry.Info, id: StrawberryUUID) -> bool:
         """Delete an existing FAQ category."""
         db: Session = info.context["db"]
         category = db.query(FAQCategoryModel).filter(FAQCategoryModel.id == id).first()
@@ -82,9 +84,10 @@ class Mutation:
         
         return True
 
-    @strawberry.mutation(permissions_classes=[HasRole(["Super Admin", "Editor"])])
-    async def create_faq_item(self, info: strawberry.types.Info, input: FAQItemInput, db: Session = Depends(get_db)) -> FAQItemType:
+    @strawberry.mutation(permission_classes=[HasRole(roles=["Super Admin", "Editor"])])
+    async def create_faq_item(self, info: strawberry.Info, input: FAQItemInput) -> FAQItemType:
         """Create a new FAQ item."""
+        db: Session = info.context["db"]
         current_user: Optional[UserModel] = info.context.get("current_user")
         if not current_user:
             raise ValueError("User must be authenticated to create FAQ items.")
@@ -115,8 +118,9 @@ class Mutation:
         return FAQItemType.from_orm(faq_item)
     
 
-    @strawberry.mutation(permission_classes=[HasRole(["Super Admin", "Editor"])])
-    async def update_faq_item(self, info: strawberry.Info, id: StrawberryUUID, input: FAQItemUpdateInput, db: Session = Depends(get_db)) -> Optional[FAQItemType]:
+    @strawberry.mutation(permission_classes=[HasRole(roles=["Super Admin", "Editor"])])
+    async def update_faq_item(self, info: strawberry.Info, id: StrawberryUUID, input: FAQItemUpdateInput) -> Optional[FAQItemType]:
+        db: Session = info.context["db"]
         current_user: UserModel = info.context["current_user"]
         faq_item = db.query(FAQItemModel).filter(FAQItemModel.id == id).first()
         if not faq_item:
@@ -154,7 +158,8 @@ class Mutation:
         return FAQItemType.from_orm(faq_item)
 
     @strawberry.mutation(permission_classes=[HasRole(["Super Admin", "Editor"])])
-    async def delete_faq_item(self, info: strawberry.Info, id: StrawberryUUID, db: Session = Depends(get_db)) -> bool:
+    async def delete_faq_item(self, info: strawberry.Info, id: StrawberryUUID) -> bool:
+        db: Session = info.context["db"]
         faq_item = db.query(FAQItemModel).filter(FAQItemModel.id == id).first()
         if not faq_item:
             return False
@@ -170,7 +175,8 @@ class Mutation:
         return True
 
     @strawberry.mutation # Open to all for submitting feedback
-    async def submit_feedback(self, info: strawberry.Info, input: FeedbackInput, db: Session = Depends(get_db)) -> FeedbackType:
+    async def submit_feedback(self, info: strawberry.Info, input: FeedbackInput) -> FeedbackType:
+        db: Session = info.context["db"]
         current_user: Optional[UserModel] = info.context.get("current_user") # Optional
         
         faq_item_instance = None
@@ -193,8 +199,9 @@ class Mutation:
         _log_action(info, "SUBMIT_FEEDBACK", "Feedback", feedback.id, {"comment_excerpt": feedback.comment[:50]})
         return FeedbackType.from_orm(feedback)
         
-    @strawberry.mutation(permission_classes=[HasRole(["Super Admin", "Editor"])])
-    async def update_feedback_status(self, info: strawberry.Info, id: StrawberryUUID, status: str, db: Session = Depends(get_db)) -> Optional[FeedbackType]:
+    @strawberry.mutation(permission_classes=[HasRole(roles=["Super Admin", "Editor"])])
+    async def update_feedback_status(self, info: strawberry.Info, id: StrawberryUUID, status: str) -> Optional[FeedbackType]:
+        db: Session = info.context["db"]
         feedback = db.query(FeedbackModel).filter(FeedbackModel.id == id).first()
         if not feedback:
             return None
