@@ -1,6 +1,6 @@
-import stawberry 
+import strawberry
 import asyncio 
-import typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional
 from strawberry.types import Info
 from .types import FAQItemType, FeedbackType 
 
