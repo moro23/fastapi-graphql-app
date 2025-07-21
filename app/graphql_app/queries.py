@@ -1,8 +1,9 @@
 import strawberry
-from typing import List, Optional
+from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, and_
 from fastapi import Depends
+# import strawberry.fastapi.deps as strawberry_deps 
 from .types import FAQCategoryType, FAQItemType, FeedbackType, AuditLogType, UserType, RoleType, StrawberryUUID
 from .permissions import IsAuthenticated, HasRole
 from domains.faq.models import FAQCategory as FAQCategoryModel, FAQItem as FAQItemModel
@@ -17,8 +18,8 @@ from datetime import datetime, timezone
 
 @strawberry.type 
 class Query: 
-    @strawberry.field(permissions_classes=[IsAuthenticated])
-    async def me(self, info:strawberry.types.Info) -> Optional[UserType]:
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    async def me(self, info:strawberry.Info) -> Optional[UserType]:
         """Get the current authenticated user."""
         current_user = get_current_user(info)
         if not current_user:
@@ -26,7 +27,8 @@ class Query:
         return UserType.from_orm(current_user)
     
     @strawberry.field
-    async def faq_item(self, id: StrawberryUUID, db: Session = Depends(get_db)) -> Optional[FAQItemType]:
+    async def faq_item(self, id: StrawberryUUID, info: strawberry.Info )-> Optional[FAQItemType]:
+        db: Session = info.context["db"]
         item = db.query(FAQItemModel).options(
             selectinload(FAQItemModel.category),
             selectinload(FAQItemModel.created_by_user)
@@ -43,13 +45,15 @@ class Query:
     @strawberry.field
     async def list_faq_items(
         self, 
+        info: strawberry.Info,
         category_id: Optional[StrawberryUUID] = None, 
         search_term: Optional[str] = None,
         published_only: Optional[bool] = True,
         limit: Optional[int] = 10,
         offset: Optional[int] = 0,
-        db: Session = Depends(get_db)
+        
     ) -> List[FAQItemType]:
+        db: Session = info.context["db"]
         query = db.query(FAQItemModel).options(
             selectinload(FAQItemModel.category),
             selectinload(FAQItemModel.created_by_user)
@@ -70,35 +74,38 @@ class Query:
         return [FAQItemType.from_orm(item) for item in items]
 
     @strawberry.field
-    async def list_faq_categories(self, db: Session = Depends(get_db)) -> List[FAQCategoryType]:
+    async def list_faq_categories(self, info: strawberry.Info) -> List[FAQCategoryType]:
+        db: Session = info.context["db"]
         categories = db.query(FAQCategoryModel).all()
         return [FAQCategoryType.from_orm(cat) for cat in categories]
 
     # Admin/Protected queries
-    @strawberry.field(permission_classes=[HasRole(["Super Admin", "Editor"])])
+    @strawberry.field()
     async def list_all_feedback(
         self, 
+        info: strawberry.Info,
         faq_item_id: Optional[StrawberryUUID] = None,
         limit: Optional[int] = 10,
         offset: Optional[int] = 0,
-        db: Session = Depends(get_db)
     ) -> List[FeedbackType]:
+        db: Session = info.context["db"]
         query = db.query(FeedbackModel).options(selectinload(FeedbackModel.faq_item), selectinload(FeedbackModel.user))
         if faq_item_id:
             query = query.filter(FeedbackModel.faq_item_id == faq_item_id)
         feedbacks = query.order_by(FeedbackModel.created_date.desc()).limit(limit).offset(offset).all()
         return [FeedbackType.from_orm(fb) for fb in feedbacks]
 
-    @strawberry.field(permission_classes=[HasRole(["Super Admin"])])
+    @strawberry.field()
     async def list_audit_logs(
         self, 
+        info: strawberry.Info,
         user_id: Optional[StrawberryUUID] = None,
         action: Optional[str] = None,
         entity_type: Optional[str] = None,
         limit: Optional[int] = 20,
         offset: Optional[int] = 0,
-        db: Session = Depends(get_db)
     ) -> List[AuditLogType]:
+        db: Session = info.context["db"]
         query = db.query(AuditLogModel).options(selectinload(AuditLogModel.user))
         if user_id:
             query = query.filter(AuditLogModel.user_id == user_id)
@@ -109,12 +116,14 @@ class Query:
         logs = query.order_by(AuditLogModel.created_date.desc()).limit(limit).offset(offset).all()
         return [AuditLogType.from_orm(log) for log in logs]
         
-    @strawberry.field(permission_classes=[HasRole(["Super Admin"])])
-    async def list_users(self, db: Session = Depends(get_db)) -> List[UserType]:
+    @strawberry.field()
+    async def list_users(self, info: strawberry.Info) -> List[UserType]:
+        db: Session = info.context["db"]
         users = db.query(UserModel).options(selectinload(UserModel.role)).all()
         return [UserType.from_orm(user) for user in users]
 
-    @strawberry.field(permission_classes=[HasRole(["Super Admin"])])
-    async def list_roles(self, db: Session = Depends(get_db)) -> List[RoleType]:
+    @strawberry.field()
+    async def list_roles(self, info: strawberry.Info) -> List[RoleType]:
+        db: Session = info.context["db"]
         roles = db.query(RoleModel).all()
         return [RoleType.from_orm(role) for role in roles]
